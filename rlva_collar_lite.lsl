@@ -7,10 +7,13 @@
 
 string COLLAR_NAME = "RLVa Collar Lite";
 integer MENU_CHANNEL = -8675310;
+integer RLV_CHECK_CHANNEL = 9998;   // Channel for RLV version responses
 
 key g_kOwner;
 integer g_iMenuHandle;
 integer g_iRLVEnabled = FALSE;
+integer g_iRLVCheckHandle = 0;      // RLV check listen handle
+float g_fNextRLVCheck = 0.0;        // Timestamp for next RLV check
 
 // Quick restriction flags
 integer g_bRestrictDetach = FALSE;
@@ -30,8 +33,18 @@ SendRLV(string cmd)
 // Check RLV
 CheckRLV()
 {
-    llOwnerSay("@versionnew=9999");
-    llSetTimerEvent(2.0);
+    // Set up listener for RLV response BEFORE sending command
+    if (g_iRLVCheckHandle != 0)
+    {
+        llListenRemove(g_iRLVCheckHandle);
+    }
+    g_iRLVCheckHandle = llListen(RLV_CHECK_CHANNEL, "", llGetOwner(), "");
+
+    // Send RLV version query - viewer will respond on RLV_CHECK_CHANNEL if enabled
+    llOwnerSay("@versionnew=" + (string)RLV_CHECK_CHANNEL);
+
+    // Schedule next check in 45 seconds
+    g_fNextRLVCheck = llGetTime() + 45.0;
 }
 
 // Show main menu
@@ -106,7 +119,10 @@ default
     {
         g_kOwner = llGetOwner();
         llOwnerSay(COLLAR_NAME + " ready. Touch to open menu.");
+
+        // Start periodic RLV check
         CheckRLV();
+        llSetTimerEvent(1.0); // Timer for periodic checks
     }
 
     touch_start(integer num)
@@ -116,7 +132,20 @@ default
 
     listen(integer channel, string name, key id, string msg)
     {
-        if (channel == MENU_CHANNEL && id == g_kOwner)
+        if (channel == RLV_CHECK_CHANNEL && id == g_kOwner)
+        {
+            // RLV version response received - RLV is enabled!
+            g_iRLVEnabled = TRUE;
+            llOwnerSay("✓ RLV Enabled - Version: " + msg);
+
+            // Clean up listener
+            if (g_iRLVCheckHandle != 0)
+            {
+                llListenRemove(g_iRLVCheckHandle);
+                g_iRLVCheckHandle = 0;
+            }
+        }
+        else if (channel == MENU_CHANNEL && id == g_kOwner)
         {
             // Toggle restrictions
             if (llSubStringIndex(msg, "Detach") != -1)
@@ -191,12 +220,21 @@ default
 
     timer()
     {
+        // Check if it's time for periodic RLV check
+        if (llGetTime() >= g_fNextRLVCheck)
+        {
+            CheckRLV();
+        }
+
+        // Menu timeout
         if (g_iMenuHandle)
         {
             llListenRemove(g_iMenuHandle);
             g_iMenuHandle = 0;
         }
-        llSetTimerEvent(0.0);
+
+        // Keep timer running for periodic RLV checks
+        llSetTimerEvent(1.0);
     }
 
     on_rez(integer param)

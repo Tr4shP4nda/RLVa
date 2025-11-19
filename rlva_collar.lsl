@@ -14,6 +14,7 @@ string VERSION = "1.0.0-alpha";
 integer LISTEN_CHANNEL = 0;        // Public chat channel
 integer MENU_CHANNEL = -8675309;    // Random negative channel for menus
 integer RELAY_CHANNEL = -1812221819; // Standard RLV relay channel
+integer RLV_CHECK_CHANNEL = 9999;   // Channel for RLV version responses
 
 // ========================================
 // GLOBAL VARIABLES
@@ -24,6 +25,8 @@ integer g_iListenHandle = 0;       // Listen handle
 integer g_iMenuHandle = 0;         // Menu listen handle
 key g_kMenuUser = NULL_KEY;        // Current menu user
 integer g_iRLVEnabled = FALSE;     // RLV status
+integer g_iRLVCheckHandle = 0;     // RLV check listen handle
+float g_fNextRLVCheck = 0.0;       // Timestamp for next RLV check
 integer g_iLocked = FALSE;         // Lock status
 integer g_iRelayEnabled = TRUE;    // Relay status
 key g_kLeashHolder = NULL_KEY;     // Current leash holder
@@ -59,8 +62,18 @@ SendRLV(string command)
 // Check if wearer has RLV enabled
 CheckRLV()
 {
-    llOwnerSay("@versionnew=9999");
-    llSetTimerEvent(2.0); // Check response in 2 seconds
+    // Set up listener for RLV response BEFORE sending command
+    if (g_iRLVCheckHandle != 0)
+    {
+        llListenRemove(g_iRLVCheckHandle);
+    }
+    g_iRLVCheckHandle = llListen(RLV_CHECK_CHANNEL, "", llGetOwner(), "");
+
+    // Send RLV version query - viewer will respond on RLV_CHECK_CHANNEL if enabled
+    llOwnerSay("@versionnew=" + (string)RLV_CHECK_CHANNEL);
+
+    // Schedule next check in 45 seconds
+    g_fNextRLVCheck = llGetTime() + 45.0;
 }
 
 // Apply restriction
@@ -432,8 +445,9 @@ default
         g_kOwner = llGetOwner();
         llOwnerSay(COLLAR_NAME + " v" + VERSION + " initializing...");
 
-        // Check for RLV
+        // Start periodic RLV check
         CheckRLV();
+        llSetTimerEvent(1.0); // Timer for periodic checks and other functions
 
         // Listen on public channel for commands
         if (g_iListenHandle != 0) llListenRemove(g_iListenHandle);
@@ -483,6 +497,19 @@ default
         {
             // Relay commands
             HandleRelayCommand(message, id);
+        }
+        else if (channel == RLV_CHECK_CHANNEL && id == g_kOwner)
+        {
+            // RLV version response received - RLV is enabled!
+            g_iRLVEnabled = TRUE;
+            llOwnerSay("✓ RLV Enabled - Version: " + message);
+
+            // Clean up listener
+            if (g_iRLVCheckHandle != 0)
+            {
+                llListenRemove(g_iRLVCheckHandle);
+                g_iRLVCheckHandle = 0;
+            }
         }
         else if (channel == MENU_CHANNEL)
         {
@@ -724,6 +751,12 @@ default
 
     timer()
     {
+        // Check if it's time for periodic RLV check
+        if (llGetTime() >= g_fNextRLVCheck)
+        {
+            CheckRLV();
+        }
+
         if (g_iLeashActive)
         {
             UpdateLeash();
@@ -736,7 +769,8 @@ default
                 llListenRemove(g_iMenuHandle);
                 g_iMenuHandle = 0;
             }
-            llSetTimerEvent(0.0);
+            // Don't stop timer - keep it running for periodic RLV checks
+            llSetTimerEvent(1.0);
         }
     }
 
