@@ -168,7 +168,7 @@ StartLeash(key holder)
 {
     g_kLeashHolder = holder;
     g_iLeashActive = TRUE;
-    llSetTimerEvent(0.5); // Update leash every 0.5 seconds
+    llSetTimerEvent(0.2); // Update leash every 0.2 seconds for smooth pulling
     llOwnerSay("Leash attached to " + llKey2Name(holder));
 }
 
@@ -194,10 +194,16 @@ UpdateLeash()
     vector myPos = llGetPos();
     float distance = llVecDist(targetPos, myPos);
 
-    // If beyond 5 meters, pull closer (to within 3 meters)
+    // Pull when beyond 5 meters - smooth incremental movement
     if (distance > 5.0)
     {
-        vector pullPos = targetPos + llVecNorm(myPos - targetPos) * 3.0;
+        // Calculate pull strength based on distance (stronger pull when further)
+        float pullDistance = (distance - 3.0) * 0.7; // Pull 70% of excess distance
+        if (pullDistance > 3.0) pullDistance = 3.0; // Max 3m per update
+
+        vector direction = llVecNorm(targetPos - myPos);
+        vector pullPos = myPos + (direction * pullDistance);
+
         ForceTeleport(pullPos);
     }
 }
