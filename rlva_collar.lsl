@@ -292,8 +292,18 @@ ShowLeashMenu(key id)
         buttons = ["Grab Leash", "« Back"];
     }
 
-    string prompt = "Leash Menu\nStatus: " + (g_iLeashActive ? "Active" : "Inactive");
-    if (g_iLeashActive)
+	 
+    string prompt = "Leash Menu\nStatus: ";
+    
+	if (g_iLeashActive)
+	{
+		prompt += "Active";
+	} else 
+	{
+		prompt += "Inactive";
+	}
+
+	if (g_iLeashActive)
     {
         prompt += "\nHolder: " + llKey2Name(g_kLeashHolder);
     }
@@ -335,9 +345,28 @@ ShowSettingsMenu(key id)
         return;
     }
 
+	string g_iLockedText;
+    string g_iRelayEnabledText;
+    
+    if (g_iLocked)
+	{
+		g_iLockedText = "ON";
+	} else 
+	{
+		g_iLockedText = "OFF";
+	}
+
+	if (g_iRelayEnabled)
+	{
+		g_iRelayEnabledText = "ON";
+	} else 
+	{
+		g_iRelayEnabledText = "OFF";
+	}
+
     list buttons = [
-        "Lock: " + (g_iLocked ? "ON" : "OFF"),
-        "Relay: " + (g_iRelayEnabled ? "ON" : "OFF"),
+        "Lock: " + g_iLockedText,
+        "Relay: " + g_iRelayEnabledText,
         "Check RLV",
         "« Back"
     ];
@@ -670,7 +699,13 @@ default
             else if (llGetSubString(message, 0, 5) == "Relay:")
             {
                 g_iRelayEnabled = !g_iRelayEnabled;
-                llInstantMessage(id, "Relay " + (g_iRelayEnabled ? "enabled" : "disabled") + ".");
+				if (g_iRelayEnabled)
+				{
+					llInstantMessage(id, "Relay enabled.");
+				} else 
+				{
+					llInstantMessage(id, "Relay disabled.");
+				}
                 ShowSettingsMenu(id);
             }
             else if (message == "Check RLV")
