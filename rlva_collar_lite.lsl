@@ -43,18 +43,55 @@ ShowMenu(key id)
         return;
     }
 
+	string g_bRestrictDetachText;
+	string g_bRestrictSitText;
+	string g_bRestrictTPText;
+	string g_bRestrictIMText;
+
+	if (g_bRestrictDetach)
+	{
+		g_bRestrictDetachText = "☑";
+	}else{
+		g_bRestrictDetachText = "☐";
+	}
+
+	if (g_bRestrictSit)
+	{
+		g_bRestrictSitText = "☑";
+	}else{
+		g_bRestrictSitText = "☐";
+	}
+
+	if (g_bRestrictTP)
+	{
+		g_bRestrictTPText = "☑";
+	}else{
+		g_bRestrictTPText = "☐";
+	}
+
+	if (g_bRestrictIM)
+	{
+		g_bRestrictIMText = "☑";
+	}else{
+		g_bRestrictIMText = "☐";
+	}
     list buttons = [
-        (g_bRestrictDetach ? "☑" : "☐") + " Detach",
-        (g_bRestrictSit ? "☑" : "☐") + " Sit",
-        (g_bRestrictTP ? "☑" : "☐") + " TP",
-        (g_bRestrictIM ? "☑" : "☐") + " IM",
+        g_bRestrictDetachText  + " Detach",
+        g_bRestrictSitText  + " Sit",
+        g_bRestrictTPText + " TP",
+        g_bRestrictIMText + " IM",
         "Force Stand",
         "Release All",
         "Check RLV"
     ];
 
     string prompt = COLLAR_NAME + "\n";
-    prompt += "RLV: " + (g_iRLVEnabled ? "Active" : "Inactive") + "\n";
+	if (g_iRLVEnabled)
+	{
+		prompt += "RLV: Active\n";
+	} else {
+		prompt += "RLV: Inactive\n";
+	}
     prompt += "Toggle restrictions or use force commands:";
 
     if (g_iMenuHandle) llListenRemove(g_iMenuHandle);
@@ -85,23 +122,49 @@ default
             if (llSubStringIndex(msg, "Detach") != -1)
             {
                 g_bRestrictDetach = !g_bRestrictDetach;
-                SendRLV("detach=" + (g_bRestrictDetach ? "n" : "y"));
+				if (g_bRestrictDetach)
+				{
+					SendRLV("detach=n");
+				} else {
+					SendRLV("detach=y");
+				}
             }
             else if (llSubStringIndex(msg, "Sit") != -1)
             {
                 g_bRestrictSit = !g_bRestrictSit;
-                SendRLV("sit=" + (g_bRestrictSit ? "n" : "y"));
+				if (g_bRestrictSit)
+				{
+					SendRLV("sit=n");
+				} else {
+					SendRLV("sit=y");
+				}
             }
             else if (llSubStringIndex(msg, "TP") != -1)
             {
                 g_bRestrictTP = !g_bRestrictTP;
-                SendRLV("tplure=" + (g_bRestrictTP ? "n" : "y"));
-                SendRLV("tplm=" + (g_bRestrictTP ? "n" : "y"));
+				if (g_bRestrictTP)
+				{
+					SendRLV("tplure=n");
+				} else {
+					SendRLV("tplure=y");
+				}
+
+				if (g_bRestrictTP)
+				{
+					SendRLV("tplm=n");
+				} else {
+					SendRLV("tplm=y");
+				}
             }
             else if (llSubStringIndex(msg, "IM") != -1)
             {
                 g_bRestrictIM = !g_bRestrictIM;
-                SendRLV("sendim=" + (g_bRestrictIM ? "n" : "y"));
+				if (g_bRestrictIM)
+				{
+					SendRLV("sendim=n");
+				} else {
+					SendRLV("sendim=y");
+				}
             }
             // Force commands
             else if (msg == "Force Stand")
