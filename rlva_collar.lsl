@@ -1,5 +1,5 @@
 // ========================================
-// RLVa Collar Script v1.0
+// RLVa Collar Script v1.0.0-alpha
 // ========================================
 // A comprehensive RLV collar similar to Peanut RLV collars
 // Features: Owner control, RLV restrictions, force commands,
@@ -10,7 +10,7 @@
 // CONFIGURATION
 // ========================================
 string COLLAR_NAME = "RLVa Collar";
-string VERSION = "1.0";
+string VERSION = "1.0.0-alpha";
 integer LISTEN_CHANNEL = 0;        // Public chat channel
 integer MENU_CHANNEL = -8675309;    // Random negative channel for menus
 integer RELAY_CHANNEL = -1812221819; // Standard RLV relay channel
