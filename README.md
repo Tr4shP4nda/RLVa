@@ -9,7 +9,6 @@ The complete collar solution with all features:
 - ✅ Owner and trusted user access control
 - ✅ Comprehensive RLV restrictions (detach, sit, TP, IM, chat, touch, inventory, edit, fly)
 - ✅ Force commands (stand, sit, teleport)
-- ✅ Leash system with automatic following
 - ✅ RLV relay support
 - ✅ Interactive menu system
 - ✅ Lock/unlock functionality
@@ -83,24 +82,18 @@ A lightweight version for basic use:
   - **Sit Here**: Force wearer to sit on the user
   - **TP Here**: Teleport wearer to user's location
 
-**3. Leash**
-- **Grab Leash**: Take control of the leash
-  - Wearer will automatically follow you within 5 meters
-  - Move around and the wearer will be pulled to follow
-- **Release**: Release the leash
-
-**4. Access** (Owner only)
+**3. Access** (Owner only)
 - **Add Trusted**: Add users who can control the collar
 - **Remove Trusted**: Remove trusted users
 - **List Trusted**: Show all trusted users
 
-**5. Settings** (Owner only)
+**4. Settings** (Owner only)
 - **Lock**: Toggle collar lock (prevents detaching)
 - **Relay**: Enable/disable RLV relay functionality
 - **Check RLV**: Verify RLV is working
 
-**6. Release All**
-- Immediately remove all restrictions and release leash
+**5. Release All**
+- Immediately remove all restrictions
 - Emergency release function
 
 #### Advanced Features
@@ -143,12 +136,6 @@ string COLLAR_NAME = "Your Custom Name";
 If you experience menu conflicts, change the `MENU_CHANNEL`:
 ```lsl
 integer MENU_CHANNEL = -8675309; // Change to any negative number
-```
-
-### Adjusting Leash Distance
-In the `UpdateLeash()` function, modify the distance check:
-```lsl
-if (distance > 5.0) // Change 5.0 to desired meters (default is 5m)
 ```
 
 ### Adding Custom Restrictions
@@ -222,12 +209,6 @@ Here are some useful RLV commands you can use with the `*` prefix:
 - ✅ Click the collar again to re-trigger the menu
 - ✅ Try changing the MENU_CHANNEL to a different negative number
 
-### "Leash not working"
-- ✅ RLV must be enabled for force teleport
-- ✅ Check that you're in a script-enabled area
-- ✅ Some regions block force teleport
-- ✅ Try using a different force TP method
-
 ### "Can't detach collar"
 - ✅ Use the "Release All" button first
 - ✅ If that doesn't work, disable RLV in viewer preferences
@@ -262,7 +243,6 @@ Here are some useful RLV commands you can use with the `*` prefix:
 - Full-featured collar with all major RLV functions
 - Lite version for simplified use
 - Complete menu system
-- Leash functionality
 - Relay support
 - Access control system
 
@@ -270,7 +250,6 @@ Here are some useful RLV commands you can use with the `*` prefix:
 
 Feel free to modify and improve these scripts! Some ideas for enhancements:
 - Add animations for different poses
-- Implement a particle leash visual effect
 - Add sound effects for locking/unlocking
 - Create a matching HUD for remote control
 - Add outfit folder management

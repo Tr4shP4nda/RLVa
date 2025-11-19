@@ -3,7 +3,7 @@
 // ========================================
 // A comprehensive RLV collar similar to Peanut RLV collars
 // Features: Owner control, RLV restrictions, force commands,
-// leash, relay, and menu system
+// relay, and menu system
 // ========================================
 
 // ========================================
@@ -28,8 +28,6 @@ integer g_iRLVEnabled = FALSE;     // RLV status
 integer g_iRLVCheckHandle = 0;     // RLV check listen handle
 integer g_iLocked = FALSE;         // Lock status
 integer g_iRelayEnabled = TRUE;    // Relay status
-key g_kLeashHolder = NULL_KEY;     // Current leash holder
-integer g_iLeashActive = FALSE;    // Leash active status
 list g_lNearbyAvatars = [];        // List of nearby avatar keys
 list g_lNearbyNames = [];          // List of nearby avatar names
 integer g_iAwaitingAccessAdd = FALSE; // Flag for access menu state
@@ -161,54 +159,6 @@ ForceTeleport(vector pos)
 }
 
 // ========================================
-// LEASH FUNCTIONS
-// ========================================
-
-StartLeash(key holder)
-{
-    g_kLeashHolder = holder;
-    g_iLeashActive = TRUE;
-    llSetTimerEvent(0.2); // Update leash every 0.2 seconds for smooth pulling
-    llOwnerSay("Leash attached to " + llKey2Name(holder));
-}
-
-StopLeash()
-{
-    g_iLeashActive = FALSE;
-    g_kLeashHolder = NULL_KEY;
-    llOwnerSay("Leash released");
-}
-
-UpdateLeash()
-{
-    if (!g_iLeashActive || g_kLeashHolder == NULL_KEY) return;
-
-    list details = llGetObjectDetails(g_kLeashHolder, [OBJECT_POS]);
-    if (details == [])
-    {
-        StopLeash();
-        return;
-    }
-
-    vector targetPos = llList2Vector(details, 0);
-    vector myPos = llGetPos();
-    float distance = llVecDist(targetPos, myPos);
-
-    // Pull when beyond 5 meters - smooth incremental movement
-    if (distance > 5.0)
-    {
-        // Calculate pull strength based on distance (stronger pull when further)
-        float pullDistance = (distance - 3.0) * 0.7; // Pull 70% of excess distance
-        if (pullDistance > 3.0) pullDistance = 3.0; // Max 3m per update
-
-        vector direction = llVecNorm(targetPos - myPos);
-        vector pullPos = myPos + (direction * pullDistance);
-
-        ForceTeleport(pullPos);
-    }
-}
-
-// ========================================
 // ACCESS CONTROL
 // ========================================
 
@@ -239,7 +189,6 @@ ShowMainMenu(key id)
     list buttons = [
         "Restrictions",
         "Force",
-        "Leash",
         "Access",
         "Settings",
         "Release All"
@@ -292,41 +241,6 @@ ShowForceMenu(key id)
     ];
 
     string prompt = "Force Commands\nSelect action to force on wearer:";
-
-    g_kMenuUser = id;
-    if (g_iMenuHandle != 0) llListenRemove(g_iMenuHandle);
-    g_iMenuHandle = llListen(MENU_CHANNEL, "", id, "");
-    llDialog(id, prompt, buttons, MENU_CHANNEL);
-}
-
-ShowLeashMenu(key id)
-{
-    list buttons;
-
-    if (g_iLeashActive)
-    {
-        buttons = ["Release", "« Back"];
-    }
-    else
-    {
-        buttons = ["Grab Leash", "« Back"];
-    }
-
-	 
-    string prompt = "Leash Menu\nStatus: ";
-    
-	if (g_iLeashActive)
-	{
-		prompt += "Active";
-	} else 
-	{
-		prompt += "Inactive";
-	}
-
-	if (g_iLeashActive)
-    {
-        prompt += "\nHolder: " + llKey2Name(g_kLeashHolder);
-    }
 
     g_kMenuUser = id;
     if (g_iMenuHandle != 0) llListenRemove(g_iMenuHandle);
@@ -562,10 +476,6 @@ default
             {
                 ShowForceMenu(id);
             }
-            else if (message == "Leash")
-            {
-                ShowLeashMenu(id);
-            }
             else if (message == "Access")
             {
                 ShowAccessMenu(id);
@@ -577,8 +487,7 @@ default
             else if (message == "Release All")
             {
                 RemoveAllRestrictions();
-                StopLeash();
-                llInstantMessage(id, "All restrictions and leash released.");
+                llInstantMessage(id, "All restrictions released.");
                 ShowMainMenu(id);
             }
             // Restrictions menu
@@ -691,22 +600,6 @@ default
                     llInstantMessage(id, "Teleporting wearer to your location.");
                 }
                 ShowForceMenu(id);
-            }
-            // Leash menu
-            else if (message == "Grab Leash")
-            {
-                StartLeash(id);
-                llInstantMessage(id, "You have grabbed the leash. Move and the wearer will follow.");
-                ShowLeashMenu(id);
-            }
-            else if (message == "Release")
-            {
-                if (g_kLeashHolder == id || IsOwner(id))
-                {
-                    StopLeash();
-                    llInstantMessage(id, "Leash released.");
-                }
-                ShowLeashMenu(id);
             }
             // Access menu
             else if (message == "Add Trusted")
@@ -827,20 +720,13 @@ default
 
     timer()
     {
-        if (g_iLeashActive)
+        // Menu timeout
+        if (g_iMenuHandle != 0)
         {
-            UpdateLeash();
+            llListenRemove(g_iMenuHandle);
+            g_iMenuHandle = 0;
         }
-        else
-        {
-            // Menu timeout
-            if (g_iMenuHandle != 0)
-            {
-                llListenRemove(g_iMenuHandle);
-                g_iMenuHandle = 0;
-            }
-            llSetTimerEvent(0.0);
-        }
+        llSetTimerEvent(0.0);
     }
 
     sensor(integer num_detected)
