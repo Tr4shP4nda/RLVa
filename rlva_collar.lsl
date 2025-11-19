@@ -26,7 +26,6 @@ integer g_iMenuHandle = 0;         // Menu listen handle
 key g_kMenuUser = NULL_KEY;        // Current menu user
 integer g_iRLVEnabled = FALSE;     // RLV status
 integer g_iRLVCheckHandle = 0;     // RLV check listen handle
-float g_fNextRLVCheck = 0.0;       // Timestamp for next RLV check
 integer g_iLocked = FALSE;         // Lock status
 integer g_iRelayEnabled = TRUE;    // Relay status
 key g_kLeashHolder = NULL_KEY;     // Current leash holder
@@ -71,9 +70,6 @@ CheckRLV()
 
     // Send RLV version query - viewer will respond on RLV_CHECK_CHANNEL if enabled
     llOwnerSay("@versionnew=" + (string)RLV_CHECK_CHANNEL);
-
-    // Schedule next check in 45 seconds
-    g_fNextRLVCheck = llGetTime() + 45.0;
 }
 
 // Apply restriction
@@ -445,9 +441,8 @@ default
         g_kOwner = llGetOwner();
         llOwnerSay(COLLAR_NAME + " v" + VERSION + " initializing...");
 
-        // Start periodic RLV check
+        // Check for RLV
         CheckRLV();
-        llSetTimerEvent(1.0); // Timer for periodic checks and other functions
 
         // Listen on public channel for commands
         if (g_iListenHandle != 0) llListenRemove(g_iListenHandle);
@@ -751,12 +746,6 @@ default
 
     timer()
     {
-        // Check if it's time for periodic RLV check
-        if (llGetTime() >= g_fNextRLVCheck)
-        {
-            CheckRLV();
-        }
-
         if (g_iLeashActive)
         {
             UpdateLeash();
@@ -769,8 +758,7 @@ default
                 llListenRemove(g_iMenuHandle);
                 g_iMenuHandle = 0;
             }
-            // Don't stop timer - keep it running for periodic RLV checks
-            llSetTimerEvent(1.0);
+            llSetTimerEvent(0.0);
         }
     }
 

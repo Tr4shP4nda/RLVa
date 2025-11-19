@@ -13,7 +13,6 @@ key g_kOwner;
 integer g_iMenuHandle;
 integer g_iRLVEnabled = FALSE;
 integer g_iRLVCheckHandle = 0;      // RLV check listen handle
-float g_fNextRLVCheck = 0.0;        // Timestamp for next RLV check
 
 // Quick restriction flags
 integer g_bRestrictDetach = FALSE;
@@ -42,9 +41,6 @@ CheckRLV()
 
     // Send RLV version query - viewer will respond on RLV_CHECK_CHANNEL if enabled
     llOwnerSay("@versionnew=" + (string)RLV_CHECK_CHANNEL);
-
-    // Schedule next check in 45 seconds
-    g_fNextRLVCheck = llGetTime() + 45.0;
 }
 
 // Show main menu
@@ -119,10 +115,7 @@ default
     {
         g_kOwner = llGetOwner();
         llOwnerSay(COLLAR_NAME + " ready. Touch to open menu.");
-
-        // Start periodic RLV check
         CheckRLV();
-        llSetTimerEvent(1.0); // Timer for periodic checks
     }
 
     touch_start(integer num)
@@ -220,21 +213,12 @@ default
 
     timer()
     {
-        // Check if it's time for periodic RLV check
-        if (llGetTime() >= g_fNextRLVCheck)
-        {
-            CheckRLV();
-        }
-
-        // Menu timeout
         if (g_iMenuHandle)
         {
             llListenRemove(g_iMenuHandle);
             g_iMenuHandle = 0;
         }
-
-        // Keep timer running for periodic RLV checks
-        llSetTimerEvent(1.0);
+        llSetTimerEvent(0.0);
     }
 
     on_rez(integer param)
