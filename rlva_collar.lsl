@@ -155,7 +155,9 @@ ForceSit(key target)
 
 ForceTeleport(vector pos)
 {
-    SendRLV("tpto:" + (string)pos + "=force");
+    // RLV requires x/y/z format, not <x,y,z>
+    string coords = (string)((integer)pos.x) + "/" + (string)((integer)pos.y) + "/" + (string)((integer)pos.z);
+    SendRLV("tpto:" + coords + "=force");
 }
 
 // ========================================
@@ -192,10 +194,10 @@ UpdateLeash()
     vector myPos = llGetPos();
     float distance = llVecDist(targetPos, myPos);
 
-    // If beyond 3 meters, pull closer
-    if (distance > 3.0)
+    // If beyond 5 meters, pull closer (to within 3 meters)
+    if (distance > 5.0)
     {
-        vector pullPos = targetPos + llVecNorm(myPos - targetPos) * 2.0;
+        vector pullPos = targetPos + llVecNorm(myPos - targetPos) * 3.0;
         ForceTeleport(pullPos);
     }
 }
