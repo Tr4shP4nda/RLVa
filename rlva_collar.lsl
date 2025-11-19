@@ -30,6 +30,9 @@ integer g_iLocked = FALSE;         // Lock status
 integer g_iRelayEnabled = TRUE;    // Relay status
 key g_kLeashHolder = NULL_KEY;     // Current leash holder
 integer g_iLeashActive = FALSE;    // Leash active status
+list g_lNearbyAvatars = [];        // List of nearby avatar keys
+list g_lNearbyNames = [];          // List of nearby avatar names
+integer g_iAwaitingAccessAdd = FALSE; // Flag for access menu state
 
 // Current restrictions (bitfield)
 integer RESTRICT_DETACH = 0x001;
@@ -339,6 +342,37 @@ ShowAccessMenu(key id)
     ];
 
     string prompt = "Access Control\nManage who can control this collar.";
+
+    g_kMenuUser = id;
+    if (g_iMenuHandle != 0) llListenRemove(g_iMenuHandle);
+    g_iMenuHandle = llListen(MENU_CHANNEL, "", id, "");
+    llDialog(id, prompt, buttons, MENU_CHANNEL);
+}
+
+ShowNearbyUsersMenu(key id)
+{
+    if (llGetListLength(g_lNearbyNames) == 0)
+    {
+        llInstantMessage(id, "No nearby users found within 10 meters.");
+        ShowAccessMenu(id);
+        return;
+    }
+
+    // Build button list from nearby names (max 12 for dialog)
+    list buttons = [];
+    integer i;
+    integer count = llGetListLength(g_lNearbyNames);
+    if (count > 11) count = 11; // Leave room for Back button
+
+    for (i = 0; i < count; i++)
+    {
+        string name = llList2String(g_lNearbyNames, i);
+        buttons += [name];
+    }
+    buttons += ["« Back"];
+
+    string prompt = "Select a user to add to trusted list:\n";
+    prompt += "(" + (string)llGetListLength(g_lNearbyNames) + " users found)";
 
     g_kMenuUser = id;
     if (g_iMenuHandle != 0) llListenRemove(g_iMenuHandle);
@@ -669,7 +703,10 @@ default
             // Access menu
             else if (message == "Add Trusted")
             {
-                llInstantMessage(id, "Touch someone nearby to add them as trusted, or say their name in chat.");
+                llInstantMessage(id, "Scanning for nearby users within 10 meters...");
+                g_iAwaitingAccessAdd = TRUE;
+                g_lNearbyAvatars = [];
+                g_lNearbyNames = [];
                 llSensor("", NULL_KEY, AGENT, 10.0, PI);
             }
             else if (message == "Remove Trusted")
@@ -739,7 +776,43 @@ default
             // Back button
             else if (message == "« Back")
             {
-                ShowMainMenu(id);
+                if (g_iAwaitingAccessAdd)
+                {
+                    g_iAwaitingAccessAdd = FALSE;
+                    ShowAccessMenu(id);
+                }
+                else
+                {
+                    ShowMainMenu(id);
+                }
+            }
+            // Check if selecting a user from nearby list
+            else if (g_iAwaitingAccessAdd)
+            {
+                // Check if message matches a nearby user name
+                integer idx = llListFindList(g_lNearbyNames, [message]);
+                if (idx != -1)
+                {
+                    key selectedUser = llList2Key(g_lNearbyAvatars, idx);
+
+                    // Check if already trusted
+                    if (llListFindList(g_lTrusted, [selectedUser]) != -1)
+                    {
+                        llInstantMessage(id, llKey2Name(selectedUser) + " is already trusted.");
+                    }
+                    else if (selectedUser == g_kOwner)
+                    {
+                        llInstantMessage(id, "The owner always has access.");
+                    }
+                    else
+                    {
+                        g_lTrusted += [selectedUser];
+                        llInstantMessage(id, "Added " + llKey2Name(selectedUser) + " to trusted list.");
+                    }
+
+                    g_iAwaitingAccessAdd = FALSE;
+                    ShowAccessMenu(id);
+                }
             }
         }
     }
@@ -759,6 +832,37 @@ default
                 g_iMenuHandle = 0;
             }
             llSetTimerEvent(0.0);
+        }
+    }
+
+    sensor(integer num_detected)
+    {
+        if (g_iAwaitingAccessAdd)
+        {
+            // Build lists of nearby avatars (excluding owner)
+            integer i;
+            for (i = 0; i < num_detected; i++)
+            {
+                key avatar = llDetectedKey(i);
+                if (avatar != g_kOwner)
+                {
+                    g_lNearbyAvatars += [avatar];
+                    g_lNearbyNames += [llDetectedName(i)];
+                }
+            }
+
+            // Show the menu
+            ShowNearbyUsersMenu(g_kMenuUser);
+        }
+    }
+
+    no_sensor()
+    {
+        if (g_iAwaitingAccessAdd)
+        {
+            llInstantMessage(g_kMenuUser, "No nearby users found within 10 meters.");
+            g_iAwaitingAccessAdd = FALSE;
+            ShowAccessMenu(g_kMenuUser);
         }
     }
 
