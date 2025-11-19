@@ -85,7 +85,7 @@ A lightweight version for basic use:
 
 **3. Leash**
 - **Grab Leash**: Take control of the leash
-  - Wearer will automatically follow you within 3 meters
+  - Wearer will automatically follow you within 5 meters
   - Move around and the wearer will be pulled to follow
 - **Release**: Release the leash
 
@@ -148,7 +148,7 @@ integer MENU_CHANNEL = -8675309; // Change to any negative number
 ### Adjusting Leash Distance
 In the `UpdateLeash()` function, modify the distance check:
 ```lsl
-if (distance > 3.0) // Change 3.0 to desired meters
+if (distance > 5.0) // Change 5.0 to desired meters (default is 5m)
 ```
 
 ### Adding Custom Restrictions
