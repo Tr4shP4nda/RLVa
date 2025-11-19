@@ -1,5 +1,5 @@
 // ========================================
-// RLVa Collar Lite v1.0
+// RLVa Collar Lite v1.0.0-alpha
 // ========================================
 // A simplified RLV collar for basic use
 // Features: Owner control, basic restrictions, simple menu
